@@ -1,8 +1,9 @@
 // views/admin/admin_dashboard.dart
-import 'package:emart_app/consts/colors.dart';
 import 'package:emart_app/consts/consts.dart';
 import 'package:emart_app/views/admin/admin_log_screen.dart';
+import 'package:emart_app/views/admin/orders/orders_table.dart';
 import 'package:emart_app/views/admin/products/products_table.dart';
+import 'package:emart_app/views/admin/reports/reports_page.dart';
 import 'package:flutter/material.dart';
 import 'package:emart_app/views/admin/users/users_table.dart';
 import 'package:emart_app/views/admin/categories/categories_table.dart';
@@ -20,9 +21,11 @@ class _AdminDashboardState extends State<AdminDashboard> {
   int _selectedIndex = 0;
 
  static final List<Widget> _widgetOptions = <Widget>[
-  const UsersTable(),
+ const UsersTable(),
   ProductsTable(),
   CategoriesTable(),
+  const OrdersTable(),
+  const ReportsPage(),
 ];
 
   void _onItemTapped(int index) {
@@ -35,7 +38,12 @@ class _AdminDashboardState extends State<AdminDashboard> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: "Admin Dashboard".text.make(),
+        title: const Text(
+  "Admin Dashboard",
+  style: TextStyle(color: Colors.white),
+),
+
+
         backgroundColor: redColor,
         actions: [
           IconButton(
@@ -49,24 +57,33 @@ class _AdminDashboardState extends State<AdminDashboard> {
       ),
       body: _widgetOptions.elementAt(_selectedIndex),
       bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Users',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.shopping_bag),
-            label: 'Products',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.category),
-            label: 'Categories',
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: redColor,
-        onTap: _onItemTapped,
-      ),
+  items: const <BottomNavigationBarItem>[
+    BottomNavigationBarItem(
+      icon: Icon(Icons.people),
+      label: 'Users',
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(Icons.shopping_bag),
+      label: 'Products',
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(Icons.category),
+      label: 'Categories',
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(Icons.shopping_cart),
+      label: 'Orders',
+    ),
+    BottomNavigationBarItem(
+      icon: Icon(Icons.analytics),
+      label: 'Reports',
+    ),
+  ],
+  currentIndex: _selectedIndex,
+  selectedItemColor: redColor,
+  unselectedItemColor: Colors.grey[600],
+  onTap: _onItemTapped,
+),
     );
   }
 }

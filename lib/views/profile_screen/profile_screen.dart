@@ -3,7 +3,9 @@ import 'package:emart_app/controllers/auth_controller.dart';
 import 'package:emart_app/controllers/profile_controller.dart';
 import 'package:emart_app/views/admin/admin_log_screen.dart';
 import 'package:emart_app/views/auth_screen/login_screen.dart';
+import 'package:emart_app/views/cart_screen/cart_screen.dart';
 import 'package:emart_app/views/profile_screen/edit_screen.dart';
+import 'package:emart_app/views/profile_screen/favorite_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:emart_app/consts/consts.dart';
 import 'package:emart_app/widgets_common/bg_widget.dart';
@@ -14,25 +16,34 @@ class ProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var controller = Get.put(ProfileController());
+   var controller = Get.put(ProfileController());
+  
+  // Add this to fetch stats when screen loads
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    controller.fetchUserStats();
+  });
 
     return bgWidget(
       child: Scaffold(
         backgroundColor: Colors.transparent,
         appBar: AppBar(
           leading: IconButton(
-            onPressed: () => Get.back(),
+            onPressed: () {
+              // Fallback to Flutter navigation
+              if (Navigator.canPop(context)) {
+                Navigator.pop(context);
+              }
+              // Final fallback
+              else {
+                Navigator.of(context, rootNavigator: true).pop();
+              }
+            },
             icon: const Icon(Icons.arrow_back, color: Colors.white),
           ),
           actions: [
             IconButton(
-              onPressed: () {
-                Get.to(() => const ProfileEditScreen());
-              },
-              icon: const Icon(
-                Icons.edit,
-                color: Colors.white,
-              ),
+              onPressed: () => Get.to(() => const ProfileEditScreen()),
+              icon: const Icon(Icons.edit, color: Colors.white),
               tooltip: 'edit',
             ),
             IconButton(
@@ -43,19 +54,21 @@ class ProfileScreen extends StatelessWidget {
               icon: const Icon(Icons.logout, color: Colors.white),
               tooltip: 'Logout',
             ),
-            IconButton(
-              onPressed: () async {
-                bool isAdmin = await Get.find<AuthController>()
-                    .isAdmin(currentUser!.email!);
-                if (isAdmin) {
-                  Get.to(() => const AdminLoginScreen());
-                } else {
-                  VxToast.show(context, msg: "Admin access only");
-                }
-              },
-              icon: const Icon(Icons.admin_panel_settings, color: Colors.white),
-              tooltip: 'Admin',
-            ),
+            if (Get.find<AuthController>().currentUser?.email != null)
+              IconButton(
+                onPressed: () async {
+                  bool isAdmin = await Get.find<AuthController>()
+                      .isAdmin(Get.find<AuthController>().currentUser!.email!);
+                  if (isAdmin) {
+                    Get.to(() => const AdminLoginScreen());
+                  } else {
+                    VxToast.show(context, msg: "Admin access only");
+                  }
+                },
+                icon:
+                    const Icon(Icons.admin_panel_settings, color: Colors.white),
+                tooltip: 'Admin',
+              ),
           ],
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -66,8 +79,7 @@ class ProfileScreen extends StatelessWidget {
                 .collection(usersCollection)
                 .doc(currentUser!.uid)
                 .snapshots(),
-            builder: (BuildContext context,
-                AsyncSnapshot<DocumentSnapshot> snapshot) {
+            builder: (context, snapshot) {
               if (snapshot.hasError) {
                 return const Center(
                   child: Text(
@@ -94,17 +106,16 @@ class ProfileScreen extends StatelessWidget {
                 );
               }
 
-              var userData = snapshot.data!.data() as Map<String, dynamic>;
-              String userName = userData['name'] ?? 'User';
-              String userEmail = userData['email'] ?? currentUser!.email ?? '';
-              String imageUrl = userData['imageUrl'] ?? '';
+              final userData = snapshot.data!.data() as Map<String, dynamic>;
+              final userName = userData['name'] ?? 'User';
+              final userEmail = userData['email'] ?? currentUser!.email ?? '';
+              final imageUrl = userData['imageUrl'] ?? '';
 
-              // Update controller with current image URL
               controller.loadProfileImage(imageUrl);
 
               return Column(
                 children: [
-                  // Header Section with Background
+                  // Header Section
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
@@ -119,7 +130,7 @@ class ProfileScreen extends StatelessWidget {
                         // Profile Info
                         Row(
                           children: [
-                            // Fixed Profile Image - Now shows dynamic image
+                            // Profile Image
                             Container(
                               width: 100,
                               height: 100,
@@ -137,65 +148,64 @@ class ProfileScreen extends StatelessWidget {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  userName.text.white
-                                      .fontFamily(bold)
-                                      .size(18)
-                                      .make(),
-                                  userEmail.text.white.size(14).make(),
+                                  Text(
+                                    userName,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontFamily: bold,
+                                      fontSize: 18,
+                                    ),
+                                  ),
+                                  Text(
+                                    userEmail,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                    ),
+                                  ),
                                 ],
                               ),
                             ),
                           ],
                         ),
-
                         30.heightBox,
 
-                        // Stats Row with dynamic data
-                        FutureBuilder<Map<String, int>>(
-                          future: _getUserStats(),
-                          builder: (context, statsSnapshot) {
-                            if (statsSnapshot.connectionState ==
-                                ConnectionState.waiting) {
-                              return Row(
+                        // Stats Row
+                        // Stats Row
+                        Obx(() => Container(
+                              padding:
+                                  const EdgeInsets.symmetric(horizontal: 20),
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   Expanded(
-                                      child:
-                                          _buildStatCard("--", "In your cart")),
-                                  10.widthBox,
+                                    child: _buildStatCard(
+                                      controller.cartCount.value.toString(),
+                                      "In Cart",
+                                    ).onTap(() {
+                                      Get.to(() => const CartScreen());
+                                    }),
+                                  ),
+                                  const SizedBox(width: 10),
                                   Expanded(
-                                      child: _buildStatCard(
-                                          "--", "In your wishlist")),
-                                  10.widthBox,
+                                    child: _buildStatCard(
+                                      controller.favoriteCount.value.toString(),
+                                      "Favorites",
+                                    ).onTap(() {
+                                      Get.to(() => const FavoritesScreen());
+                                    }),
+                                  ),
+                                  const SizedBox(width: 10),
                                   Expanded(
-                                      child:
-                                          _buildStatCard("--", "You ordered")),
+                                    child: _buildStatCard(
+                                      controller.orderCount.value.toString(),
+                                      "Orders",
+                                    ),
+                                  ),
                                 ],
-                              );
-                            }
-
-                            var stats = statsSnapshot.data ??
-                                {'cart': 0, 'wishlist': 0, 'orders': 0};
-
-                            return Row(
-                              children: [
-                                Expanded(
-                                    child: _buildStatCard(
-                                        "${stats['cart']}", "In your cart")),
-                                10.widthBox,
-                                Expanded(
-                                    child: _buildStatCard(
-                                        "${stats['wishlist']}",
-                                        "In your wishlist")),
-                                10.widthBox,
-                                Expanded(
-                                    child: _buildStatCard(
-                                        "${stats['orders']}", "You ordered")),
-                              ],
-                            );
-                          },
-                        ),
-
-                        5.heightBox,
+                              ),
+                            )),
                       ],
                     ),
                   ),
@@ -207,12 +217,47 @@ class ProfileScreen extends StatelessWidget {
                         padding: const EdgeInsets.all(20),
                         children: [
                           _buildMenuItem(
-                              Icons.account_balance_wallet, "My Wallet"),
-                          _buildMenuItem(Icons.receipt_long, "My Orders"),
-                          _buildMenuItem(Icons.favorite_border, "My Wishlist"),
-                          _buildMenuItem(Icons.star_border, "Earned Points"),
-                          _buildMenuItem(Icons.refresh, "Refund Requests"),
-                          _buildMenuItem(Icons.message, "Messages"),
+                            Icons.account_balance_wallet,
+                            "My Wallet",
+                            onTap: () {
+                              // Handle wallet tap
+                            },
+                          ),
+                          _buildMenuItem(
+                            Icons.receipt_long,
+                            "My Orders",
+                            onTap: () {
+                              // Handle orders tap
+                            },
+                          ),
+                          _buildMenuItem(
+                            Icons.favorite,
+                            "My Favorites",
+                            onTap: () {
+                              Get.to(() => const FavoritesScreen());
+                            },
+                          ),
+                          _buildMenuItem(
+                            Icons.star_border,
+                            "Earned Points",
+                            onTap: () {
+                              // Handle points tap
+                            },
+                          ),
+                          _buildMenuItem(
+                            Icons.refresh,
+                            "Refund Requests",
+                            onTap: () {
+                              // Handle refunds tap
+                            },
+                          ),
+                          _buildMenuItem(
+                            Icons.message,
+                            "Messages",
+                            onTap: () {
+                              // Handle messages tap
+                            },
+                          ),
                         ],
                       ),
                     ),
@@ -345,7 +390,7 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildMenuItem(IconData icon, String title) {
+  Widget _buildMenuItem(IconData icon, String title, {VoidCallback? onTap}) {
     return Container(
       margin: const EdgeInsets.only(bottom: 15),
       padding: const EdgeInsets.all(15),
@@ -360,38 +405,41 @@ class ProfileScreen extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.grey[100],
-              borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onTap,
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(
+                icon,
+                color: Colors.grey[600],
+                size: 20,
+              ),
             ),
-            child: Icon(
-              icon,
-              color: Colors.grey[600],
-              size: 20,
+            15.widthBox,
+            Expanded(
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontFamily: semibold,
+                  color: Colors.grey[800],
+                  fontSize: 16,
+                ),
+              ),
             ),
-          ),
-          15.widthBox,
-          Expanded(
-            child: title.text
-                .fontFamily(semibold)
-                .color(Colors.grey[800])
-                .size(16)
-                .make(),
-          ),
-          Icon(
-            Icons.arrow_forward_ios,
-            color: Colors.grey[400],
-            size: 16,
-          ),
-        ],
+            const Icon(
+              Icons.arrow_forward_ios,
+              color: Colors.grey,
+              size: 16,
+            ),
+          ],
+        ),
       ),
-    ).onTap(() {
-      // Handle menu item tap
-      print("Tapped on $title");
-    });
+    );
   }
 }

@@ -22,9 +22,19 @@ class CategoryDetailsScreen extends StatelessWidget {
       child: Scaffold(
         appBar: AppBar(
           leading: IconButton(
-            onPressed: () => Get.back(),
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
-          ),
+  onPressed: () {
+   
+    // Fallback to Flutter navigation
+   if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
+    // Final fallback
+    else {
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+  },
+  icon: Icon(Icons.arrow_back),
+),
           title: title!.text.fontFamily(bold).white.make(),
           centerTitle: true,
         ),
@@ -32,17 +42,16 @@ class CategoryDetailsScreen extends StatelessWidget {
           padding: const EdgeInsets.all(12),
           child: Column(
             children: [
-              // Subcategories could go here if needed
               20.heightBox,
               Expanded(
                 child: StreamBuilder<QuerySnapshot>(
                   stream: FirebaseFirestore.instance
                       .collection('products')
-                      .where('categoryId', isEqualTo: categoryId)
+                      .where('categoryIds', arrayContains: categoryId)
                       .snapshots(),
                   builder: (context, snapshot) {
                     if (snapshot.hasError) {
-                      return const Center(child: const Text('Error loading products'));
+                      return const Center(child: Text('Error loading products'));
                     }
 
                     if (snapshot.connectionState == ConnectionState.waiting) {
@@ -71,15 +80,73 @@ class CategoryDetailsScreen extends StatelessWidget {
                         final product = products[index];
                         final productData = product.data() as Map<String, dynamic>;
                         
+                        // Check if product is on sale
+                        final isOnSale = productData['sale'] != null;
+                        final originalPrice = (productData['price'] as num?)?.toDouble() ?? 0.0;
+                        final salePercent = (productData['sale'] as num?)?.toDouble();
+                        final salePrice = salePercent != null 
+                            ? originalPrice * (1 - (salePercent / 100))
+                            : null;
+
                         return Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            // TODO: Replace with actual product image
-                            Image.network(
-                              productData['imageUrl'] ?? 'assets/images/s1.jpg',
-                              height: 150,
-                              width: 200,
-                              fit: BoxFit.cover,
+                            Stack(
+                              children: [
+                                // Updated image widget with placeholder
+                                productData['imageUrl'] == null || productData['imageUrl'].isEmpty
+                                    ? Container(
+                                        height: 150,
+                                        width: 200,
+                                        color: Colors.grey[200],
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.image, size: 50, color: Colors.grey[400]),
+                                            const SizedBox(height: 8),
+                                            "No Image".text.color(Colors.grey[600]).make(),
+                                          ],
+                                        ),
+                                      )
+                                    : Image.network(
+                                        productData['imageUrl'],
+                                        height: 150,
+                                        width: 200,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Container(
+                                            height: 150,
+                                            width: 200,
+                                            color: Colors.grey[200],
+                                            child: Column(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Icon(Icons.broken_image, size: 50, color: Colors.grey[400]),
+                                                const SizedBox(height: 8),
+                                                "Image Error".text.color(Colors.grey[600]).make(),
+                                              ],
+                                            ),
+                                          );
+                                        },
+                                      ),
+                                if (isOnSale)
+                                  Positioned(
+                                    top: 0,
+                                    right: 0,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      color: Colors.red,
+                                      child: Text(
+                                        '${salePercent?.toStringAsFixed(0)}% OFF',
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
                             ),
                             Text(
                               productData['name'] ?? 'Unnamed Product',
@@ -87,16 +154,42 @@ class CategoryDetailsScreen extends StatelessWidget {
                                 fontFamily: semibold,
                                 color: darkFontGrey,
                               ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                             10.heightBox,
-                            Text(
-                              "\$${productData['price']?.toStringAsFixed(2) ?? '0.00'}",
-                              style: const TextStyle(
-                                color: redColor,
-                                fontFamily: bold,
-                                fontSize: 16,
+                            if (isOnSale)
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '\$${originalPrice.toStringAsFixed(2)}',
+                                    style: const TextStyle(
+                                      color: Colors.grey,
+                                      fontFamily: regular,
+                                      fontSize: 12,
+                                      decoration: TextDecoration.lineThrough,
+                                    ),
+                                  ),
+                                  Text(
+                                    '\$${salePrice?.toStringAsFixed(2) ?? '0.00'}',
+                                    style: const TextStyle(
+                                      color: redColor,
+                                      fontFamily: bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ],
+                              )
+                            else
+                              Text(
+                                '\$${originalPrice.toStringAsFixed(2)}',
+                                style: const TextStyle(
+                                  color: redColor,
+                                  fontFamily: bold,
+                                  fontSize: 16,
+                                ),
                               ),
-                            ),
                           ],
                         )
                             .box

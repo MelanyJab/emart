@@ -1,3 +1,4 @@
+// In product_model.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class ProductModel {
@@ -6,10 +7,11 @@ class ProductModel {
   final String description;
   final double price;
   final String imageUrl;
-  final String categoryId;
+  final List<String> categoryIds;  
   final List<String> colors;
   final double rating;
   final DateTime createdAt;
+  final double? sale;
 
   ProductModel({
     required this.id,
@@ -17,10 +19,11 @@ class ProductModel {
     required this.description,
     required this.price,
     required this.imageUrl,
-    required this.categoryId,
+    this.categoryIds = const [],  
     this.colors = const [],
     this.rating = 0.0,
     required this.createdAt,
+    this.sale,
   });
 
   factory ProductModel.fromMap(Map<String, dynamic> data, String id) {
@@ -30,10 +33,11 @@ class ProductModel {
       description: data['description'] ?? '',
       price: (data['price'] as num?)?.toDouble() ?? 0.0,
       imageUrl: data['imageUrl'] ?? '',
-      categoryId: data['categoryId'] ?? '',
+      categoryIds: List<String>.from(data['categoryIds'] ?? []),  
       colors: List<String>.from(data['colors'] ?? []),
       rating: (data['rating'] as num?)?.toDouble() ?? 0.0,
       createdAt: (data['createdAt'] as Timestamp?)?.toDate() ?? DateTime.now(),
+      sale: (data['sale'] as num?)?.toDouble(),
     );
   }
 
@@ -43,10 +47,16 @@ class ProductModel {
       'description': description,
       'price': price,
       'imageUrl': imageUrl,
-      'categoryId': categoryId,
+      'categoryIds': categoryIds,  
       'colors': colors,
       'rating': rating,
       'createdAt': createdAt,
+      'sale': sale,
     };
+  }
+   // Helper method to calculate sale price
+  double? get salePrice {
+    if (sale == null) return null;
+    return price * (1 - (sale! / 100));
   }
 }

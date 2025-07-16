@@ -36,7 +36,7 @@ void initState(){
 @override
 Widget build(BuildContext context) {
   return Scaffold(
-    backgroundColor: Colors.red,
+    backgroundColor: const Color.fromARGB(255, 226, 226, 226),
     body: Center(
       child: Column(
         children: [

@@ -146,7 +146,17 @@ class _ProfileEditScreenState extends State<ProfileEditScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () {
+   
+    // Fallback to Flutter navigation
+   if (Navigator.canPop(context)) {
+      Navigator.pop(context);
+    }
+    // Final fallback
+    else {
+      Navigator.of(context, rootNavigator: true).pop();
+    }
+  },
             icon: const Icon(Icons.arrow_back, color: Colors.white),
           ),
           title: "Edit Profile".text.fontFamily(bold).white.size(18).make(),

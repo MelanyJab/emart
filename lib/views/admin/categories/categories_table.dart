@@ -1,7 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:emart_app/consts/consts.dart';
 import 'package:emart_app/controllers/admin_controller.dart';
-import 'package:emart_app/models/category_model.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -127,7 +126,7 @@ class CategoriesTable extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Get.back(),
+            onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
             child: const Text('Cancel', style: TextStyle(color: darkFontGrey)),
           ),
           TextButton(
@@ -166,7 +165,7 @@ class CategoriesTable extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Get.back(),
+            onPressed: () =>   Navigator.of(context, rootNavigator: true).pop(),
             child: const Text('Cancel', style: TextStyle(color: darkFontGrey)),
           ),
           TextButton(
@@ -194,7 +193,7 @@ class CategoriesTable extends StatelessWidget {
         content: const Text('Are you sure you want to delete this category? This will not delete products in this category.'),
         actions: [
           TextButton(
-            onPressed: () => Get.back(),
+            onPressed: () =>   Navigator.of(context, rootNavigator: true).pop(),
             child: const Text('Cancel', style: TextStyle(color: darkFontGrey)),
           ),
           TextButton(

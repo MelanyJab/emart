@@ -13,6 +13,7 @@ class Home extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var controller = Get.put(HomeController());
+    
     var navbarItem = [
       BottomNavigationBarItem(
           icon: Image.asset(icHome, width: 26), label: home),
@@ -26,17 +27,13 @@ class Home extends StatelessWidget {
 
     var navBody = [
       const HomeScreen(),
-      const CategoryScreen(),
+      const CategoryScreen(title: '', categoryId: '',),
       const CartScreen(),
       const ProfileScreen()
     ];
+    
     return Scaffold(
-      body: Column(
-        children: [
-          Obx(() => Expanded(
-              child: navBody.elementAt(controller.currentNavIndex.value))),
-        ],
-      ),
+      body: Obx(() => navBody.elementAt(controller.currentNavIndex.value)),
       bottomNavigationBar: Obx(
         () => BottomNavigationBar(
           currentIndex: controller.currentNavIndex.value,

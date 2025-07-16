@@ -50,8 +50,7 @@ const icWhiteTick = "assets/icons/white_tick.png";
 const icWholeSale = "assets/icons/wholesale.png";
 
 //images
-
-const imgBackground = "assets/icons/bg.png";
+const imgBackground = "assets/icons/bg2.jpeg";
 const imgB1 = "assets/images/b1.jpeg";
 const imgB2 = "assets/images/b2.jpeg";
 const imgB3 = "assets/images/b3.jpeg";

@@ -1,5 +1,9 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:emart_app/controllers/auth_controller.dart';
+import 'package:emart_app/models/cart_model.dart';
+import 'package:emart_app/models/favorite_model.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,9 +13,44 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:emart_app/consts/consts.dart';
 
 class ProfileController extends GetxController {
+
+  @override
+void onInit() {
+  super.onInit();
+  fetchUserStats();
+  
+  // Listen for changes in cart
+  FirebaseFirestore.instance
+      .collection('cart')
+      .where('userId', isEqualTo: currentUser?.uid ?? '')
+      .snapshots()
+      .listen((snapshot) {
+    cartItems.assignAll(
+      snapshot.docs.map((doc) => CartModel.fromMap(doc.data())).toList(),
+    );
+    cartCount.value = cartItems.length;
+  });
+
+  // Listen for changes in favorites
+  FirebaseFirestore.instance
+      .collection('favorites')
+      .where('userId', isEqualTo: currentUser?.uid ?? '')
+      .snapshots()
+      .listen((snapshot) {
+    favoriteItems.assignAll(
+      snapshot.docs.map((doc) => FavoriteModel.fromMap(doc.data())).toList(),
+    );
+    favoriteCount.value = favoriteItems.length;
+  });
+}
   var profileImgPath = ''.obs;
   var profileImgUrl = ''.obs;
   var isLoading = false.obs;
+   var cartItems = <CartModel>[].obs;
+  var favoriteItems = <FavoriteModel>[].obs;
+  var cartCount = 0.obs;
+  var favoriteCount = 0.obs;
+  var orderCount = 0.obs;
 
   Future<void> changeImage(BuildContext context) async {
     try {
@@ -72,6 +111,48 @@ class ProfileController extends GetxController {
       return null;
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  
+
+  Future<void> fetchUserStats() async {
+    try {
+      isLoading(true);
+      final user = Get.find<AuthController>().currentUser;
+      if (user == null) return;
+
+      // Fetch cart items
+      final cartSnapshot = await FirebaseFirestore.instance
+          .collection('cart')
+          .where('userId', isEqualTo: user.uid)
+          .get();
+      cartItems.assignAll(
+        cartSnapshot.docs.map((doc) => CartModel.fromMap(doc.data())).toList(),
+      );
+      cartCount.value = cartItems.length;
+
+      // Fetch favorite items
+      final favoriteSnapshot = await FirebaseFirestore.instance
+          .collection('favorites')
+          .where('userId', isEqualTo: user.uid)
+          .get();
+      favoriteItems.assignAll(
+        favoriteSnapshot.docs.map((doc) => FavoriteModel.fromMap(doc.data())).toList(),
+      );
+      favoriteCount.value = favoriteItems.length;
+
+      // Fetch order count
+      final orderSnapshot = await FirebaseFirestore.instance
+          .collection('orders')
+          .where('userId', isEqualTo: user.uid)
+          .get();
+      orderCount.value = orderSnapshot.docs.length;
+
+    } catch (e) {
+      debugPrint('Error fetching user stats: $e');
+    } finally {
+      isLoading(false);
     }
   }
 
